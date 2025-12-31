@@ -1,0 +1,26 @@
+# WatsonX Orchestrate Configuration for Risk Document Completion MCP Server
+#
+# This configuration file shows how to integrate the MCP server with WatsonX Orchestrate.
+# Save this in your Orchestrate project directory.
+
+tools:
+  - name: risk-document-completion
+    description: Automated risk document completion with RAG-powered question answering
+    type: mcp
+    command:
+      - python
+      - /absolute/path/to/risk_document_completion_MCP_tool/mcp_server.py
+    environment:
+      MODEL_URL: ${MODEL_URL}
+      API_KEY: ${API_KEY}
+      PROJECT_ID: ${PROJECT_ID}
+      SPACE_ID: ${SPACE_ID}
+      MODEL: ${MODEL}
+      ASTRA_DB_API_ENDPOINT: ${ASTRA_DB_API_ENDPOINT}
+      ASTRA_DB_APPLICATION_TOKEN: ${ASTRA_DB_APPLICATION_TOKEN}
+    capabilities:
+      - complete_risk_document
+      - detect_qa_columns
+      - answer_single_question
+      - search_knowledge_base
+      - list_excel_sheets

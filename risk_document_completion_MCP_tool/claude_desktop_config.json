@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "risk-document-completion": {
+      "command": "python",
+      "args": [
+        "/absolute/path/to/risk_document_completion_MCP_tool/mcp_server.py"
+      ],
+      "env": {
+        "MODEL_URL": "<your_watsonx_url>",
+        "API_KEY": "<your_api_key>",
+        "PROJECT_ID": "<your_project_id>",
+        "SPACE_ID": "<your_space_id>",
+        "MODEL": "<your_model_id>",
+        "ASTRA_DB_API_ENDPOINT": "<your_astra_endpoint>",
+        "ASTRA_DB_APPLICATION_TOKEN": "<your_astra_token>"
+      }
+    }
+  }
+}
