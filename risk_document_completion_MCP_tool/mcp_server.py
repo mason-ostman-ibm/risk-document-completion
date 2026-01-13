@@ -6,7 +6,10 @@ Exposes document completion functionality as MCP tools for WatsonX Orchestrate
 
 import os
 import logging
-from typing import Optional
+import tempfile
+import base64
+from typing import Optional, Union
+from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
@@ -42,6 +45,54 @@ def get_model():
     return _model_cache
 
 
+def bytes_to_temp_file(file_bytes: bytes, filename: str = "document.xlsx") -> str:
+    """
+    Convert bytes to a temporary file and return the file path.
+
+    Args:
+        file_bytes: File content as bytes
+        filename: Original filename (used for extension)
+
+    Returns:
+        Path to the temporary file
+    """
+    suffix = Path(filename).suffix or '.xlsx'
+    temp_file = tempfile.NamedTemporaryFile(mode='wb', suffix=suffix, delete=False)
+    temp_file.write(file_bytes)
+    temp_file.close()
+    logger.info(f"Created temporary file: {temp_file.name}")
+    return temp_file.name
+
+
+def file_to_bytes(file_path: str) -> bytes:
+    """
+    Read a file and return its content as bytes.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        File content as bytes
+    """
+    with open(file_path, 'rb') as f:
+        return f.read()
+
+
+def cleanup_temp_file(file_path: str):
+    """
+    Delete a temporary file if it exists.
+
+    Args:
+        file_path: Path to the temporary file
+    """
+    try:
+        if os.path.exists(file_path):
+            os.unlink(file_path)
+            logger.info(f"Cleaned up temporary file: {file_path}")
+    except Exception as e:
+        logger.warning(f"Failed to clean up temporary file {file_path}: {e}")
+
+
 @mcp.tool()
 def complete_risk_document(
     input_file_path: str,
@@ -49,6 +100,9 @@ def complete_risk_document(
 ) -> str:
     """
     Process an Excel document and automatically fill in unanswered questions using RAG.
+
+    NOTE: For WatsonX Orchestrate integration with file uploads/downloads,
+    use complete_risk_document_from_bytes instead, which accepts and returns bytes.
 
     This tool:
     1. Detects Q&A columns in each sheet using LLM
@@ -88,6 +142,89 @@ def complete_risk_document(
 
     except Exception as e:
         logger.error(f"Error processing document: {str(e)}", exc_info=True)
+        return f"Error processing document: {str(e)}"
+
+
+@mcp.tool()
+def complete_risk_document_from_bytes(
+    file_bytes: bytes,
+    filename: str = "document.xlsx",
+    return_as_bytes: bool = True
+) -> Union[bytes, str]:
+    """
+    Process an Excel document from bytes and return the completed document.
+
+    This tool is optimized for WatsonX Orchestrate integration where files
+    are provided as bytes and the result should be returned as bytes for
+    direct download.
+
+    This tool:
+    1. Accepts an Excel file as bytes (uploaded by user)
+    2. Detects Q&A columns in each sheet using LLM
+    3. Finds unanswered questions
+    4. Generates answers using RAG (Retrieval-Augmented Generation)
+    5. Fills the answers into the Excel file
+    6. Returns the completed file as bytes (for download) or path
+
+    Args:
+        file_bytes: Excel file content as bytes
+        filename: Original filename (used for extension detection, default: document.xlsx)
+        return_as_bytes: If True, returns completed file as bytes. If False, returns file path.
+
+    Returns:
+        Completed Excel file as bytes (if return_as_bytes=True) or success message with path
+
+    Example:
+        # For WatsonX Orchestrate (returns bytes for download)
+        completed_bytes = complete_risk_document_from_bytes(
+            file_bytes=uploaded_file_bytes,
+            filename="risk_assessment.xlsx",
+            return_as_bytes=True
+        )
+    """
+    input_temp_path = None
+    output_temp_path = None
+
+    try:
+        # Validate file extension from filename
+        if not filename.endswith('.xlsx'):
+            if return_as_bytes:
+                raise ValueError("Input file must be an Excel file (.xlsx)")
+            return "Error: Input file must be an Excel file (.xlsx)"
+
+        # Convert bytes to temporary file
+        logger.info(f"Processing file from bytes: {filename}")
+        input_temp_path = bytes_to_temp_file(file_bytes, filename)
+
+        # Process the document
+        logger.info(f"Processing document: {input_temp_path}")
+        output_temp_path = process_document(input_temp_path)
+
+        if return_as_bytes:
+            # Read the completed file as bytes
+            logger.info(f"Reading completed file as bytes: {output_temp_path}")
+            result_bytes = file_to_bytes(output_temp_path)
+
+            # Clean up temporary files
+            cleanup_temp_file(input_temp_path)
+            cleanup_temp_file(output_temp_path)
+
+            return result_bytes
+        else:
+            # Return path (keep temp files for retrieval)
+            return f"✓ Document processing complete! Temporary output saved to: {output_temp_path}"
+
+    except Exception as e:
+        # Clean up temporary files on error
+        if input_temp_path:
+            cleanup_temp_file(input_temp_path)
+        if output_temp_path:
+            cleanup_temp_file(output_temp_path)
+
+        logger.error(f"Error processing document from bytes: {str(e)}", exc_info=True)
+
+        if return_as_bytes:
+            raise Exception(f"Error processing document: {str(e)}")
         return f"Error processing document: {str(e)}"
 
 

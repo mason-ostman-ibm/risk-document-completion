@@ -43,14 +43,19 @@ Multi-sheet processing loop (`process_document` in `auto_complete_document.py:22
 
 The MCP server (`mcp_server.py`) wraps the document completion functionality as Model Context Protocol tools:
 - **FastMCP Framework** - Uses MCP Python SDK for protocol implementation
-- **Five Tools Exposed**:
-  1. `complete_risk_document` - Process entire Excel documents
-  2. `detect_qa_columns` - Identify Q&A columns in sheets
-  3. `answer_single_question` - Answer individual questions with RAG
-  4. `search_knowledge_base` - Search AstraDB for relevant examples
-  5. `list_excel_sheets` - List all sheets in a workbook
+- **Six Tools Exposed**:
+  1. `complete_risk_document` - Process entire Excel documents (file path based)
+  2. `complete_risk_document_from_bytes` - Process Excel documents from bytes (optimized for Orchestrate)
+  3. `detect_qa_columns` - Identify Q&A columns in sheets
+  4. `answer_single_question` - Answer individual questions with RAG
+  5. `search_knowledge_base` - Search AstraDB for relevant examples
+  6. `list_excel_sheets` - List all sheets in a workbook
 - **Model Caching** - LLM model is cached on first use for performance
-- **WatsonX Orchestrate Integration** - Can be registered as a tool in Orchestrate environments
+- **WatsonX Orchestrate Integration** - Fully integrated with Orchestrate for file upload/download workflows
+  - Users can upload Excel files through Orchestrate UI
+  - Files are processed as bytes (no manual path management)
+  - Completed files are returned as bytes for immediate download
+  - See `ORCHESTRATE_INTEGRATION.md` for detailed setup guide
 - **Claude Desktop Integration** - Compatible with Claude Desktop MCP client
 
 ## Key Files
@@ -59,6 +64,7 @@ The MCP server (`mcp_server.py`) wraps the document completion functionality as 
 - **`detect_qa_columns.py`** - Standalone testing script for column detection (development utility)
 - **`mcp_server.py`** - MCP (Model Context Protocol) server that exposes document completion as tools for WatsonX Orchestrate
 - **`MCP_SERVER_README.md`** - Comprehensive documentation for the MCP server
+- **`ORCHESTRATE_INTEGRATION.md`** - Complete guide for integrating with WatsonX Orchestrate (file upload/download workflows)
 - **`QUICKSTART.md`** - Quick start guide for getting the MCP server running
 
 ## Environment Setup
