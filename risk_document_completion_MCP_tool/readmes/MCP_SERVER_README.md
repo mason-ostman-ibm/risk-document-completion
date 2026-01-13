@@ -4,13 +4,14 @@ This MCP (Model Context Protocol) server exposes document completion functionali
 
 ## Overview
 
-The MCP server provides five main tools for automated document completion:
+The MCP server provides six main tools for automated document completion:
 
-1. **complete_risk_document** - Process entire Excel documents with Q&A sections
-2. **detect_qa_columns** - Identify question and answer columns in a sheet
-3. **answer_single_question** - Answer individual questions with RAG
-4. **search_knowledge_base** - Search for relevant Q&A examples
-5. **list_excel_sheets** - List all sheets in an Excel workbook
+1. **complete_risk_document** - Process entire Excel documents with Q&A sections (file path based)
+2. **complete_risk_document_from_bytes** - Process Excel documents from bytes (optimized for Orchestrate)
+3. **detect_qa_columns** - Identify question and answer columns in a sheet
+4. **answer_single_question** - Answer individual questions with RAG
+5. **search_knowledge_base** - Search for relevant Q&A examples
+6. **list_excel_sheets** - List all sheets in an Excel workbook
 
 ## Installation
 
@@ -98,7 +99,9 @@ Add to your MCP client configuration (e.g., `claude_desktop_config.json`):
 
 ### 1. complete_risk_document
 
-Process an entire Excel document and fill in unanswered questions.
+Process an entire Excel document and fill in unanswered questions (file path based).
+
+**NOTE:** For WatsonX Orchestrate integration with file uploads/downloads, use `complete_risk_document_from_bytes` instead.
 
 **Parameters:**
 - `input_file_path` (required): Absolute path to the input Excel file
@@ -117,7 +120,43 @@ Success message with the output file path.
 
 ---
 
-### 2. detect_qa_columns
+### 2. complete_risk_document_from_bytes
+
+Process an Excel document from bytes and return the completed document (optimized for WatsonX Orchestrate).
+
+This tool is specifically designed for WatsonX Orchestrate integration where:
+- Users upload files through the Orchestrate interface
+- Files are provided as bytes to the tool
+- The completed file is returned as bytes for immediate download
+
+**Parameters:**
+- `file_bytes` (required): Excel file content as bytes
+- `filename` (optional): Original filename, default: "document.xlsx"
+- `return_as_bytes` (optional): If True (default), returns bytes. If False, returns file path.
+
+**Example:**
+```python
+# In WatsonX Orchestrate flow
+completed_bytes = complete_risk_document_from_bytes(
+    file_bytes=uploaded_file_bytes,
+    filename="risk_assessment.xlsx",
+    return_as_bytes=True
+)
+```
+
+**Returns:**
+- If `return_as_bytes=True`: Completed Excel file as bytes (ready for download)
+- If `return_as_bytes=False`: Success message with temporary file path
+
+**WatsonX Orchestrate Integration:**
+When creating a tool in Orchestrate:
+1. Set input parameter type to `File` or `bytes`
+2. Set output parameter type to `File` or `bytes`
+3. Users can upload their document and receive the completed version immediately
+
+---
+
+### 3. detect_qa_columns
 
 Detect which columns contain questions and answers in a specific sheet.
 
@@ -141,7 +180,7 @@ JSON with detected column names:
 
 ---
 
-### 3. answer_single_question
+### 4. answer_single_question
 
 Answer a single question using the LLM with optional RAG context.
 
@@ -164,7 +203,7 @@ Generated answer to the question.
 
 ---
 
-### 4. search_knowledge_base
+### 5. search_knowledge_base
 
 Search the knowledge base for relevant Q&A examples.
 
@@ -187,7 +226,7 @@ Formatted string with relevant Q&A examples.
 
 ---
 
-### 5. list_excel_sheets
+### 6. list_excel_sheets
 
 List all sheet names in an Excel workbook.
 

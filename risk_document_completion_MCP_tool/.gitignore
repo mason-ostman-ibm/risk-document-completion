@@ -31,3 +31,12 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# Claude
+.claude/
+
+# Virtual environments
+venv_test/
+
+# Workspace files
+*.code-workspace

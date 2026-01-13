@@ -155,11 +155,14 @@ print(result)
 
 Once the MCP server is running, you have access to these tools:
 
-1. **complete_risk_document** - Process entire documents
-2. **detect_qa_columns** - Find Q&A columns in sheets
-3. **answer_single_question** - Answer individual questions
-4. **search_knowledge_base** - Search the RAG database
-5. **list_excel_sheets** - List sheets in a workbook
+1. **complete_risk_document** - Process entire documents (file path based)
+2. **complete_risk_document_from_bytes** - Process documents from bytes (for Orchestrate file uploads)
+3. **detect_qa_columns** - Find Q&A columns in sheets
+4. **answer_single_question** - Answer individual questions
+5. **search_knowledge_base** - Search the RAG database
+6. **list_excel_sheets** - List sheets in a workbook
+
+**Note:** For WatsonX Orchestrate integration with file upload/download, use `complete_risk_document_from_bytes`. See `ORCHESTRATE_INTEGRATION.md` for details.
 
 ## Example Usage in WatsonX Orchestrate
 
@@ -206,6 +209,7 @@ The output should include `qa_collection`.
 ## Next Steps
 
 - Read the full documentation in `MCP_SERVER_README.md`
+- **For WatsonX Orchestrate setup**, see `ORCHESTRATE_INTEGRATION.md` for complete guide
 - Review the implementation in `mcp_server.py`
 - Check the original functionality in `auto_complete_document.py`
 - See `CLAUDE.md` for architecture details
