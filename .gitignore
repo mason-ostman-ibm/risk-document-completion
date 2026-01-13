@@ -1,8 +1,3 @@
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
 # Python
 __pycache__/
 *.py[cod]
@@ -12,37 +7,43 @@ __pycache__/
 venv/
 env/
 ENV/
-*.egg-info/
-dist/
-build/
+.venv
 
 # Environment variables
 .env
-.env.local
 
-# Excel files (can be large and contain sensitive data)
-*.xlsx
-*.xls
-*.xlsm
-
-# Logs
-*.log
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Jupyter Notebooks
-.ipynb_checkpoints/
+# OS
+.DS_Store
+Thumbs.db
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
+# Excel files (test files)
+*.xlsx
+*.xls
 
-# Model cache
-*.bin
-*.model
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Claude
+.claude/
+
+# Virtual environments
+venv_test/
+
+# Workspace files
+*.code-workspace
+
+# Documentation (local only)
+readmes/
+
+# Config files (local only)
+claude_desktop_config.json
+watsonx_orchestrate_config.yaml
