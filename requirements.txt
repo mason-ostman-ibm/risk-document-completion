@@ -14,6 +14,7 @@ sentence-transformers>=2.2.0
 
 # MCP Server
 mcp>=0.9.0
+fastmcp>=0.1.0
 
 # Optional: WatsonX Orchestrate ADK (if using with WatsonX Orchestrate)
 # ibm-watsonx-orchestrate>=0.1.0

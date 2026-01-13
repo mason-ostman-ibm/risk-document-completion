@@ -27,7 +27,6 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application files
 COPY auto_complete_document.py .
 COPY mcp_server.py .
-COPY detect_qa_columns.py .
 
 # Create directory for temporary files
 RUN mkdir -p /tmp/document_completion && \
