@@ -28,8 +28,14 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create MCP server instance
-mcp = FastMCP("risk-document-completion")
+# Create MCP server instance with host/port from environment variables
+# FastMCP reads FASTMCP_HOST and FASTMCP_PORT, but we need to pass them explicitly
+import os
+mcp = FastMCP(
+    "risk-document-completion",
+    host=os.getenv("FASTMCP_HOST", "127.0.0.1"),
+    port=int(os.getenv("FASTMCP_PORT", "8000"))
+)
 
 # Cache the model to avoid re-initialization on every call
 _model_cache = None
