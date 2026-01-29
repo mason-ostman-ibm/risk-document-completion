@@ -613,10 +613,47 @@ def list_excel_sheets(file_path: str) -> str:
         return f"Error: {str(e)}"
 
 
+@mcp.tool()
+def health_check() -> str:
+    """Health check endpoint for container orchestration"""
+    import json
+    return json.dumps({
+        "status": "healthy",
+        "service": "risk-document-completion",
+        "version": "1.0.0"
+    })
+
+
 def main():
     """Entry point for the MCP server"""
-    logger.info("Starting Risk Document Completion MCP Server...")
-    mcp.run()
+    import argparse
+    import os
+    
+    parser = argparse.ArgumentParser(description='Risk Document Completion MCP Server')
+    parser.add_argument('--transport', choices=['stdio', 'http', 'sse'], default='stdio',
+                       help='Transport protocol (stdio, http/sse)')
+    parser.add_argument('--port', type=int, default=8080,
+                       help='Port for HTTP transport')
+    parser.add_argument('--host', default='0.0.0.0',
+                       help='Host for HTTP transport')
+    
+    args = parser.parse_args()
+    
+    # Set environment variables for FastMCP to use
+    if args.transport in ['http', 'sse']:
+        os.environ['MCP_SERVER_PORT'] = str(args.port)
+        os.environ['MCP_SERVER_HOST'] = args.host
+    
+    logger.info(f"Starting Risk Document Completion MCP Server...")
+    logger.info(f"Transport: {args.transport}")
+    
+    if args.transport in ['http', 'sse']:
+        logger.info(f"HTTP server will listen on {args.host}:{args.port}")
+        # FastMCP uses 'sse' for HTTP transport
+        mcp.run(transport='sse')
+    else:
+        logger.info("Using stdio transport")
+        mcp.run()
 
 
 if __name__ == "__main__":
