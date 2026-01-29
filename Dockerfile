@@ -42,17 +42,17 @@ RUN mkdir -p /tmp/document_completion && \
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=utf-8
 ENV TEMP_DIR=/tmp/document_completion
-ENV MCP_SERVER_PORT=8080
+
+# FastMCP configuration - bind to all interfaces so container is accessible
+ENV FASTMCP_HOST=0.0.0.0
+ENV FASTMCP_PORT=8080
 
 # Expose port for HTTP endpoint
-# Note: FastMCP runs on port 8000 internally due to library limitations
-# Use port mapping (e.g., -p 8080:8000) when running the container
-EXPOSE 8000
+EXPOSE 8080
 
 # Improved health check with longer start period for model loading
-# Check internal port 8000 where FastMCP actually runs
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the MCP server with HTTP transport
 # Note: --port and --host arguments are non-functional due to FastMCP limitations
