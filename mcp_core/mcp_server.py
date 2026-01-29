@@ -613,10 +613,40 @@ def list_excel_sheets(file_path: str) -> str:
         return f"Error: {str(e)}"
 
 
+@mcp.tool()
+def health_check() -> str:
+    """Health check endpoint for container orchestration"""
+    import json
+    return json.dumps({
+        "status": "healthy",
+        "service": "risk-document-completion",
+        "version": "1.0.0"
+    })
+
+
 def main():
     """Entry point for the MCP server"""
-    logger.info("Starting Risk Document Completion MCP Server...")
-    mcp.run()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Risk Document Completion MCP Server')
+    parser.add_argument('--transport', choices=['stdio', 'http'], default='stdio',
+                       help='Transport protocol (stdio or http)')
+    parser.add_argument('--port', type=int, default=8080,
+                       help='Port for HTTP transport')
+    parser.add_argument('--host', default='0.0.0.0',
+                       help='Host for HTTP transport')
+    
+    args = parser.parse_args()
+    
+    logger.info(f"Starting Risk Document Completion MCP Server...")
+    logger.info(f"Transport: {args.transport}")
+    
+    if args.transport == 'http':
+        logger.info(f"HTTP server listening on {args.host}:{args.port}")
+        mcp.run(transport='http', host=args.host, port=args.port)
+    else:
+        logger.info("Using stdio transport")
+        mcp.run()
 
 
 if __name__ == "__main__":

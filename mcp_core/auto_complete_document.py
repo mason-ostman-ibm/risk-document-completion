@@ -19,27 +19,60 @@ from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
-# Initialize AstraDB for RAG
-ASTRA_DB_API_ENDPOINT = os.getenv("ASTRA_DB_API_ENDPOINT")
-ASTRA_DB_APPLICATION_TOKEN = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
+# Global variables for lazy initialization
+_astra_client = None
+_astra_database = None
+_collection = None
+_embedding_model = None
 
-astra_client = DataAPIClient(ASTRA_DB_APPLICATION_TOKEN)
-astra_database = astra_client.get_database(ASTRA_DB_API_ENDPOINT)
-collection = astra_database.get_collection("qa_collection")
+def get_astra_collection():
+    """Lazy initialize AstraDB collection"""
+    global _astra_client, _astra_database, _collection
+    
+    if _collection is None:
+        # Validate environment variables
+        endpoint = os.getenv("ASTRA_DB_API_ENDPOINT")
+        token = os.getenv("ASTRA_DB_APPLICATION_TOKEN")
+        
+        if not endpoint or not token:
+            raise ValueError(
+                "Missing required environment variables: "
+                "ASTRA_DB_API_ENDPOINT and ASTRA_DB_APPLICATION_TOKEN"
+            )
+        
+        _astra_client = DataAPIClient(token)
+        _astra_database = _astra_client.get_database(endpoint)
+        _collection = _astra_database.get_collection("qa_collection")
+    
+    return _collection
 
-# Initialize embedding model for RAG
-embedding_model = SentenceTransformer('ibm-granite/granite-embedding-30m-english')
+def get_embedding_model():
+    """Lazy initialize embedding model"""
+    global _embedding_model
+    
+    if _embedding_model is None:
+        print("Loading embedding model (this may take a moment)...")
+        _embedding_model = SentenceTransformer('ibm-granite/granite-embedding-30m-english')
+        print("Embedding model loaded!")
+    
+    return _embedding_model
 
 def initialize_model():
     """Initialize the LLM model for both column detection and question answering"""
+    # Validate required environment variables
+    required_vars = ["MODEL_URL", "API_KEY", "PROJECT_ID", "MODEL"]
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+    
     credentials = Credentials(
         url=os.getenv("MODEL_URL"),
-        username="mason.ostman@ibm.com",
         api_key=os.getenv("API_KEY")
     )
 
     project_id = os.getenv("PROJECT_ID")
-    space_id = os.getenv("SPACE_ID")
+    space_id = os.getenv("SPACE_ID")  # Optional
     model_id = os.getenv("MODEL")
 
     parameters = {
@@ -115,40 +148,48 @@ def get_relevant_context(question, top_k=5, similarity_threshold=0.5):
     Returns:
         String formatted context ready to add to LLM prompt
     """
-    query_embedding = embedding_model.encode(question).tolist()
+    try:
+        collection = get_astra_collection()
+        embedding_model = get_embedding_model()
+        
+        query_embedding = embedding_model.encode(question).tolist()
 
-    results = collection.find(
-        sort={"$vector": query_embedding},
-        limit=top_k,
-        projection={"question": 1, "answer": 1, "category": 1, "source_file": 1},
-        include_similarity=True
-    )
+        results = collection.find(
+            sort={"$vector": query_embedding},
+            limit=top_k,
+            projection={"question": 1, "answer": 1, "category": 1, "source_file": 1},
+            include_similarity=True
+        )
 
-    context = ""
-    relevant_count = 0
+        context = ""
+        relevant_count = 0
 
-    for j, result in enumerate(results, 1):
-        similarity = result.get('$similarity', 0)
+        for j, result in enumerate(results, 1):
+            similarity = result.get('$similarity', 0)
 
-        if similarity < similarity_threshold:
-            continue
+            if similarity < similarity_threshold:
+                continue
 
-        q = result.get('question', 'N/A')
-        a = result.get('answer', 'N/A')
+            q = result.get('question', 'N/A')
+            a = result.get('answer', 'N/A')
 
-        answer_lower = str(a).lower().strip()
-        if answer_lower in ['unanswered', 'nan', 'none', '', 'n/a']:
-            continue
+            answer_lower = str(a).lower().strip()
+            if answer_lower in ['unanswered', 'nan', 'none', '', 'n/a']:
+                continue
 
-        relevant_count += 1
-        context += f"Example {relevant_count}:\n"
-        context += f"Q: {q}\n"
-        context += f"A: {a}\n\n"
+            relevant_count += 1
+            context += f"Example {relevant_count}:\n"
+            context += f"Q: {q}\n"
+            context += f"A: {a}\n\n"
 
-    if not context:
-        context = "No relevant examples found. Use your general knowledge about IBM and business practices."
+        if not context:
+            context = "No relevant examples found. Use your general knowledge about IBM and business practices."
 
-    return context.strip()
+        return context.strip()
+        
+    except Exception as e:
+        print(f"Warning: RAG retrieval failed: {e}")
+        return "No context available due to retrieval error."
 
 def ask_llm(question, model):
     """

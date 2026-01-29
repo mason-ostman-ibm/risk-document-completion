@@ -10,11 +10,12 @@ LABEL description="Risk Document Completion MCP Server for WatsonX Orchestrate"
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including curl for health checks
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better layer caching
@@ -25,6 +26,9 @@ COPY config/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
+
+# Pre-download embedding model to avoid runtime download (speeds up startup)
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('ibm-granite/granite-embedding-30m-english')"
 
 # Copy application files from mcp_core directory
 COPY mcp_core/auto_complete_document.py .
@@ -38,14 +42,15 @@ RUN mkdir -p /tmp/document_completion && \
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=utf-8
 ENV TEMP_DIR=/tmp/document_completion
+ENV MCP_SERVER_PORT=8080
 
-# Expose port for HTTP endpoint (Code Engine will map this)
+# Expose port for HTTP endpoint
 EXPOSE 8080
 
-# Health check (optional but recommended for Code Engine)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)"
+# Improved health check with longer start period for model loading
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
-# Run the MCP server
+# Run the MCP server with HTTP transport
 # Note: Environment variables (MODEL_URL, API_KEY, etc.) will be provided by Code Engine
-CMD ["python", "-u", "mcp_server.py"]
+CMD ["python", "-u", "mcp_server.py", "--transport", "http", "--port", "8080", "--host", "0.0.0.0"]
