@@ -628,6 +628,7 @@ def main():
     """Entry point for the MCP server"""
     import argparse
     import os
+    import sys
     
     parser = argparse.ArgumentParser(description='Risk Document Completion MCP Server')
     parser.add_argument('--transport', choices=['stdio', 'http', 'sse'], default='stdio',
@@ -639,18 +640,26 @@ def main():
     
     args = parser.parse_args()
     
-    # Set environment variables for FastMCP to use
-    if args.transport in ['http', 'sse']:
-        os.environ['MCP_SERVER_PORT'] = str(args.port)
-        os.environ['MCP_SERVER_HOST'] = args.host
-    
     logger.info(f"Starting Risk Document Completion MCP Server...")
     logger.info(f"Transport: {args.transport}")
     
     if args.transport in ['http', 'sse']:
         logger.info(f"HTTP server will listen on {args.host}:{args.port}")
-        # FastMCP uses 'sse' for HTTP transport
-        mcp.run(transport='sse')
+        
+        # Monkey-patch sys.argv to pass uvicorn arguments
+        # FastMCP internally calls uvicorn.run() which reads from sys.argv
+        original_argv = sys.argv.copy()
+        sys.argv = [
+            sys.argv[0],
+            '--host', args.host,
+            '--port', str(args.port)
+        ]
+        
+        try:
+            # FastMCP uses 'sse' for HTTP transport
+            mcp.run(transport='sse')
+        finally:
+            sys.argv = original_argv
     else:
         logger.info("Using stdio transport")
         mcp.run()
