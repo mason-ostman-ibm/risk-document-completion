@@ -42,7 +42,10 @@ RUN mkdir -p /tmp/document_completion && \
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONIOENCODING=utf-8
 ENV TEMP_DIR=/tmp/document_completion
-ENV MCP_SERVER_PORT=8080
+
+# FastMCP configuration - bind to all interfaces so container is accessible
+ENV FASTMCP_HOST=0.0.0.0
+ENV FASTMCP_PORT=8080
 
 # Expose port for HTTP endpoint
 EXPOSE 8080
@@ -52,5 +55,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the MCP server with HTTP transport
-# Note: Environment variables (MODEL_URL, API_KEY, etc.) will be provided by Code Engine
-CMD ["python", "-u", "mcp_server.py", "--transport", "http", "--port", "8080", "--host", "0.0.0.0"]
+# Note: --port and --host arguments are non-functional due to FastMCP limitations
+# Server will run on 127.0.0.1:8000 regardless. See KNOWN_LIMITATIONS.md
+CMD ["python", "-u", "mcp_server.py", "--transport", "http"]

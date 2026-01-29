@@ -28,8 +28,14 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create MCP server instance
-mcp = FastMCP("risk-document-completion")
+# Create MCP server instance with host/port from environment variables
+# FastMCP reads FASTMCP_HOST and FASTMCP_PORT, but we need to pass them explicitly
+import os
+mcp = FastMCP(
+    "risk-document-completion",
+    host=os.getenv("FASTMCP_HOST", "127.0.0.1"),
+    port=int(os.getenv("FASTMCP_PORT", "8000"))
+)
 
 # Cache the model to avoid re-initialization on every call
 _model_cache = None
@@ -639,16 +645,17 @@ def main():
     
     args = parser.parse_args()
     
-    # Set environment variables for FastMCP to use
-    if args.transport in ['http', 'sse']:
-        os.environ['MCP_SERVER_PORT'] = str(args.port)
-        os.environ['MCP_SERVER_HOST'] = args.host
-    
     logger.info(f"Starting Risk Document Completion MCP Server...")
     logger.info(f"Transport: {args.transport}")
     
     if args.transport in ['http', 'sse']:
         logger.info(f"HTTP server will listen on {args.host}:{args.port}")
+        
+        # Set environment variables that FastMCP/uvicorn will read
+        # UVICORN_HOST and UVICORN_PORT are standard uvicorn env vars
+        os.environ['UVICORN_HOST'] = args.host
+        os.environ['UVICORN_PORT'] = str(args.port)
+        
         # FastMCP uses 'sse' for HTTP transport
         mcp.run(transport='sse')
     else:
