@@ -627,10 +627,11 @@ def health_check() -> str:
 def main():
     """Entry point for the MCP server"""
     import argparse
+    import os
     
     parser = argparse.ArgumentParser(description='Risk Document Completion MCP Server')
-    parser.add_argument('--transport', choices=['stdio', 'http'], default='stdio',
-                       help='Transport protocol (stdio or http)')
+    parser.add_argument('--transport', choices=['stdio', 'http', 'sse'], default='stdio',
+                       help='Transport protocol (stdio, http/sse)')
     parser.add_argument('--port', type=int, default=8080,
                        help='Port for HTTP transport')
     parser.add_argument('--host', default='0.0.0.0',
@@ -638,12 +639,18 @@ def main():
     
     args = parser.parse_args()
     
+    # Set environment variables for FastMCP to use
+    if args.transport in ['http', 'sse']:
+        os.environ['MCP_SERVER_PORT'] = str(args.port)
+        os.environ['MCP_SERVER_HOST'] = args.host
+    
     logger.info(f"Starting Risk Document Completion MCP Server...")
     logger.info(f"Transport: {args.transport}")
     
-    if args.transport == 'http':
-        logger.info(f"HTTP server listening on {args.host}:{args.port}")
-        mcp.run(transport='http', host=args.host, port=args.port)
+    if args.transport in ['http', 'sse']:
+        logger.info(f"HTTP server will listen on {args.host}:{args.port}")
+        # FastMCP uses 'sse' for HTTP transport
+        mcp.run(transport='sse')
     else:
         logger.info("Using stdio transport")
         mcp.run()
