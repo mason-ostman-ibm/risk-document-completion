@@ -1,66 +1,83 @@
-# Risk Document Completion MCP Tool
+# Risk Document Completion Tool
 
-Automatically detects Q&A columns in Excel sheets and fills in answers using RAG (Retrieval-Augmented Generation).
+Auto-complete governance, compliance, and risk questionnaires using RAG (Retrieval-Augmented Generation).
 
-## Features
+## Overview
 
-- **Automatic Column Detection**: Uses LLM to identify which columns contain questions and answers in each sheet
-- **RAG-Based Answering**: Retrieves relevant context from AstraDB vector database to generate accurate answers
-- **Multi-Sheet Support**: Processes all sheets in an Excel workbook
-- **Smart Cell Handling**: Automatically unmerges cells when needed
-- **Professional Formatting**: Proper cell alignment, row heights, and column widths
+This project provides:
+- **MCP Server**: FastMCP server with RAG-powered document completion
+- **Orchestrate Tools**: Python tools for WatsonX Orchestrate integration
+- **Base64 Workflow**: Complete file upload/download workflow for Orchestrate
 
-## Workflow
+## Quick Links
 
-1. **Initialize Model** - Sets up the LLM for both column detection and question answering
-2. **Iterate Through Each Sheet** - Processes every sheet in the workbook
-3. **Detect Q&A Columns** - Uses LLM to identify which columns have questions and answers
-4. **Answer Questions** - For each unanswered question:
-   - Uses RAG to retrieve context from AstraDB
-   - Generates answer using the LLM
-   - Fills it into the document
-5. **Save Document** - Returns completed document to user
+- **Full Guide**: [`CLAUDE.md`](CLAUDE.md) - Complete development documentation
+- **Orchestrate Integration**: [`docs/ORCHESTRATE_WORKFLOW.md`](docs/ORCHESTRATE_WORKFLOW.md)
+- **Original Docs**: [`docs/CLAUDE.md`](docs/CLAUDE.md)
 
-## Requirements
+## Project Structure
 
-- Python 3.8+
-- IBM WatsonX AI credentials
-- AstraDB database with vector search enabled
+```
+├── mcp_core/              # MCP server & RAG logic
+├── orchestrate_tools/     # Python tools for Orchestrate
+├── config/                # Configuration & dependencies
+├── tests/                 # Testing & demo scripts
+└── docs/                  # Documentation
+```
 
-## Installation
+## Setup
 
 ```bash
-# Create virtual environment
+# 1. Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
-pip install pandas openpyxl ibm-watsonx-ai python-dotenv astrapy sentence-transformers
-```
+# 2. Install dependencies
+pip install -r config/requirements.txt
 
-## Environment Variables
+# 3. Configure environment
+cp config/.env.example config/.env
+# Edit config/.env with your credentials
 
-Create a `.env` file with the following:
-
-```env
-MODEL_URL=<your_watsonx_url>
-API_KEY=<your_api_key>
-PROJECT_ID=<your_project_id>
-SPACE_ID=<your_space_id>
-MODEL=<model_id>
-ASTRA_DB_API_ENDPOINT=<your_astra_endpoint>
-ASTRA_DB_APPLICATION_TOKEN=<your_astra_token>
+# 4. Run MCP server
+python mcp_core/mcp_server.py
 ```
 
 ## Usage
 
+### Local Development
 ```bash
-# Basic usage
-python auto_complete_document.py input_file.xlsx
-
-# Specify output file
-python auto_complete_document.py input_file.xlsx output_file.xlsx
+# Run MCP server with FastMCP inspector
+cd mcp_core
+fastmcp dev mcp_server.py
 ```
+
+### Orchestrate Deployment
+```bash
+# 1. Authenticate
+orchestrate env activate production
+
+# 2. Upload tools
+cd orchestrate_tools
+orchestrate tools import --kind python --file orchestrate_encode_file.py --requirements-file orchestrate_tools_requirements.txt
+orchestrate tools import --kind python --file orchestrate_decode_file.py --requirements-file orchestrate_tools_requirements.txt
+```
+
+## Workflow
+
+```
+User Upload → Encode (base64) → MCP Process → Decode → Download
+```
+
+See [`docs/ORCHESTRATE_WORKFLOW.md`](docs/ORCHESTRATE_WORKFLOW.md) for details.
+
+## Technologies
+
+- **IBM WatsonX AI**: LLM for Q&A generation
+- **AstraDB**: Vector database for RAG
+- **FastMCP**: MCP protocol server
+- **OpenPyXL**: Excel processing
+- **WatsonX Orchestrate**: Agentic workflow platform
 
 ## License
 

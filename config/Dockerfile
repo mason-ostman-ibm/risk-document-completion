@@ -18,17 +18,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better layer caching
-COPY config/requirements.txt .
+COPY requirements.txt .
 
 # Install Python dependencies
-# IMPORTANT: Install CPU-only PyTorch first to avoid 3.7GB of unnecessary CUDA libraries
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy application files from mcp_core directory
-COPY mcp_core/auto_complete_document.py .
-COPY mcp_core/mcp_server.py .
+# Copy application files
+COPY auto_complete_document.py .
+COPY mcp_server.py .
 
 # Create directory for temporary files
 RUN mkdir -p /tmp/document_completion && \

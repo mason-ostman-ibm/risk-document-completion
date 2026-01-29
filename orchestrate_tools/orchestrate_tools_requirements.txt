@@ -1,0 +1,3 @@
+# Requirements for Orchestrate encoder/decoder tools
+# Only need ibm-watsonx-orchestrate for the @tool decorator
+ibm-watsonx-orchestrate>=2.1.0
